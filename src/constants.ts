@@ -1,7 +1,9 @@
+import { AbiItem, AbiType } from 'web3-utils'
+
 /**
  * Token registry used to get the contract address for a given symbol
  */
-export const symbolToAddressMap = {
+export const symbolToAddressMap: { [key: string]: string } = {
     'ETH': '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
     'WETH': '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
 
@@ -33,7 +35,7 @@ export const symbolToAddressMap = {
 /**
 * Minimum ABI to get the fields we care about from the ERC-20 tokens
 */
-export const erc20_abi = [
+export const erc20_abi: AbiItem[] = [
     {
         "constant": true,
         "inputs": [],

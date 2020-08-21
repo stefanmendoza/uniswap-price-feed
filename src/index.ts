@@ -1,13 +1,39 @@
 import Web3 from 'web3';
+import { BlockTransactionString, TransactionReceipt } from 'web3-eth'
 var web3 = new Web3(new Web3.providers.WebsocketProvider('wss://mainnet.infura.io/ws/v3/' + process.env.UNISWAP_FEED_INFURA_PROJECT_ID));
 
-import { BlockTransactionString, TransactionReceipt } from 'web3-eth'
-
 import { BigNumber } from 'bignumber.js'
-import  { argv, exit } from 'yargs'
+
 import { ChainId, Fetcher, Pair, Token} from '@uniswap/sdk'
 
+import yargs from 'yargs'
+const argv = yargs.options({
+  base: { type: 'string', demandOption: true },
+  quote: { type: 'string', demandOption: true },
+  threshold: { type: 'number' },
+  colours: { type: 'string' }
+}).argv;
+
+const exit = yargs.exit
+
 import { erc20_abi, symbolToAddressMap } from './constants'
+
+export interface TrackedToken {
+  address: string
+  symbol: string | undefined
+  decimals: number
+}
+
+export interface TokenPair {
+  address: string
+  baseAssetSymbol: string | undefined
+  quoteAssetSymbol: string | undefined
+}
+
+export interface TrackedTokenPair {
+  uniswap: TokenPair
+  subscribed: { [key: string]: TrackedToken }
+}
 
 /**
  * TODO - Documentation
@@ -19,7 +45,7 @@ var lastPrice: number
 /**
  * TODO - Documentation
  */
-const blockTimestamps = {}
+const blockTimestamps: { [key: number]: string } = {}
 
 /**
  * TODO - Documentation
@@ -82,7 +108,7 @@ async function getToken(tokenSymbol: string): Promise<Token> {
  * @param {*} baseAsset 
  * @param {*} quoteAsset 
  */
-async function getUniswapPairInfo(baseAsset, quoteAsset) {
+async function getUniswapPairInfo(baseAsset: Token, quoteAsset: Token) {
   console.log("\nRetrieving Uniswap pair information...")
 
   const pair = await Fetcher.fetchPairData(baseAsset, quoteAsset)
@@ -90,8 +116,8 @@ async function getUniswapPairInfo(baseAsset, quoteAsset) {
 
   console.log("Uniswap pair information retrieved.")
 
-  var pairBaseSymbol = null
-  var pairQuoteSymbol = null
+  var pairBaseSymbol: string | undefined
+  var pairQuoteSymbol: string | undefined
   if (pair.token0.address === baseAsset.address) {
     pairBaseSymbol = baseAsset.symbol
     pairQuoteSymbol = quoteAsset.symbol
@@ -100,7 +126,7 @@ async function getUniswapPairInfo(baseAsset, quoteAsset) {
     pairQuoteSymbol = baseAsset.symbol
   }
 
-  return {
+  const uniswapPairInfo: TrackedTokenPair = {
     'uniswap': {
       'address': pairAddress,
       'baseSymbol': pairBaseSymbol,
@@ -154,8 +180,8 @@ async function getBlock(blockNumber: number, retries: number): Promise<BlockTran
  * @param {*} uniswapPair 
  * @param {*} quoteSizeThreshold 
  */
-async function subscribe(baseAsset, quoteAsset, uniswapPair: string, quoteSizeThreshold: number) {
-  const pairTicker = `${uniswapPair.baseSymbol}-${uniswapPair.quoteSymbol}`
+async function subscribe(baseAsset: TrackedToken, quoteAsset: TrackedToken, uniswapPair: TokenPair, quoteSizeThreshold: number) {
+  const pairTicker = `${uniswapPair.baseAssetSymbol}-${uniswapPair.quoteAssetSymbol}`
 
   web3.eth.subscribe('logs', {
     'address': [
@@ -174,10 +200,10 @@ async function subscribe(baseAsset, quoteAsset, uniswapPair: string, quoteSizeTh
 
 
       if (!(blockNumber in blockTimestamps)) {
-        const block = await getBlock(log.blockNumber, 5)
-        const timestamp = block.timestamp
+        const block: BlockTransactionString = await getBlock(log.blockNumber, 5)
+        const timestamp: number = parseFloat(block.timestamp.toString())
 
-        const rawUtcDate = new Date(block.timestamp * 1000).toISOString()
+        const rawUtcDate = new Date(timestamp * 1000).toISOString()
         blockTimestamps[blockNumber] = `${rawUtcDate.slice(0, 10)} ${rawUtcDate.split('T')[1].slice(0, 8)}`
       }
 
@@ -230,7 +256,7 @@ function prettifyAmount(amount: BigNumber, decimals: number) {
  * @param {*} baseAsset 
  * @param {*} quoteAsset 
  */
-async function handleTransaction(txReceipt: TransactionReceipt, timestamp: number, quoteSizeThreshold: number, baseAsset, quoteAsset) {
+async function handleTransaction(txReceipt: TransactionReceipt, timestamp: string, quoteSizeThreshold: number, baseAsset: TrackedToken, quoteAsset: TrackedToken) {
   const baseAssetAddress: string = web3.utils.toChecksumAddress(baseAsset.address)
   const quoteAssetAddress: string = web3.utils.toChecksumAddress(quoteAsset.address)
 
@@ -432,18 +458,13 @@ function cliArgumentsAreValid() {
     return false
   }
 
-  if (Array.isArray(argv.base)) {
-    console.log('Please provide the base assets as a comma-delimited list.')
-    return false
-  }
-
   if (argv.quote === undefined) {
     console.log('A quote asset must be provided to subscribe to token pair information.')
     return false
   }
 
   if (argv.threshold != undefined) {
-    const threshold: number = parseFloat(String(argv.threshold))
+    const threshold: number = argv.threshold
 
     if (threshold === NaN) {
       console.log(`Expected a floating point value for 'threshold' but received ${argv.threshold}`)
@@ -467,9 +488,9 @@ async function main() {
     return 1
   }
 
-  const baseAssets: string[] = String(argv.base).split(',').map(asset => asset.trim())
-  const quoteAsset: string = String(argv.quote)
-  const threshold: number = String(argv.threshold) != undefined ? parseFloat(String(argv.threshold)) : 0.0
+  const baseAssets: string[] = argv.base.split(',').map(asset => asset.trim())
+  const quoteAsset: string = argv.quote
+  const threshold: number = argv.threshold != undefined ? argv.threshold : 0.0
 
   console.log('\n\nWARNING: It is highly suggested to verify any transactions logged by using the Etherscan link above before acting on that information.\n')
   if (threshold > 0) {
