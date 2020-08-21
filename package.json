@@ -1,0 +1,24 @@
+{
+  "name": "uniswap-price-feed",
+  "version": "1.0.0",
+  "description": "Real time price feeds from Uniswap by leveraging Infura",
+  "main": "index.js",
+  "repository": "git@github.com:stefanmendoza/uniswap-price-feed.git",
+  "author": "Stefan Mendoza <stefan@stefanmendoza.com>",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@ethersproject/contracts": "^5.0.2",
+    "@ethersproject/providers": "^5.0.5",
+    "@ethersproject/solidity": "^5.0.2",
+    "@openzeppelin/contracts": "^3.1.0",
+    "@uniswap/sdk": "^3.0.3-beta.1",
+    "web3": "^1.2.11"
+  },
+  "devDependencies": {
+    "typescript": "^3.9.7"
+  }
+}
