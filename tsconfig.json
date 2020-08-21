@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "es2018",
+    "module": "esnext",
+    "importHelpers": true,
+    "rootDir": "./",
+    "moduleResolution": "node",
+    "baseUrl": "./",
+    "outDir": "dist",
+    "paths": {
+      "*": ["src/*", "node_modules/*"]
+    },
+    "esModuleInterop": true,
+    "resolveJsonModule": true
+  }
+}

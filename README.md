@@ -12,25 +12,25 @@ $ yarn
 
 ## Getting a Token Feed
 
-In the `index.js` file, [add an entry](https://github.com/stefanmendoza/uniswap-price-feed/blob/wip/src/index.js#L26)
+In the [`index.js`](https://github.com/stefanmendoza/uniswap-price-feed/blob/wip/src/index.js) file, add an entry
 for the token you want to use in a pair. The key should be the symbol you want displayed and the value
 should be the token address (not the pair address).
 
-To get a live data feed for a given pair, run the following command:
-
+The following options are available for the command:
 ```
-$ yarn start <BASE> <QUOTE>
-```
+Required:
+--base <SYMBOLS> - A comma-delimited list of assets to track
+--quote <SYMBOL> - The quote asset to denominate all transactions in
 
-where `<BASE>` is the token you care about and `<QUOTE>` is the asset the token will be denominated in. For example,
-if you wanted to track ETH swaps in terms of USDC, you would do:
-
-```
-$ yarn start ETH USDC
+Optional:
+--threshold - The quote threshold for logging transactions.
+              This also enables aggregating of an address's trades.
 ```
 
-Don't worry if the tokens aren't in the same order on the Uniswap pair, the pair information will be able to be retrieved
-regardless of if you're demoninating the swaps in the same or opposite asset as Uniswap.
+Example:
+```
+$ yarn run start --base FLOW,OM,XAMP --quote ETH --threshold 3.5
+```
 
 ## Cool Future Improvements
 
